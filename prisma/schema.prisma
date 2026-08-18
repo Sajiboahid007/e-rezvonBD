@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Address {
+  Id             Int       @id(map: "PK__Address__3214EC07CF44E52D") @default(autoincrement())
+  UserId         Int?
+  Name           String    @db.VarChar(150)
+  Phone          String    @db.VarChar(20)
+  Email          String?   @db.VarChar(150)
+  Street         String    @db.VarChar(255)
+  Thana          String    @db.VarChar(100)
+  District       String    @db.VarChar(100)
+  City           String?   @db.VarChar(100)
+  PostalCode     String?   @db.VarChar(10)
+  IsMarkToDelete Boolean?  @default(false, map: "DF__Address__IsMarkT__5441852A")
+  CreatedDate    DateTime? @default(now(), map: "DF__Address__Created__5535A963") @db.DateTime
+  UpdatedDate    DateTime? @db.DateTime
+  CreatedBy      String?   @db.VarChar(150)
+  UpdatedBy      String?   @db.VarChar(150)
+  Users          Users?    @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Address_Users")
+  Orders         Orders[]
+}
+
+model Cart {
+  Id             Int         @id(map: "PK__Cart__3214EC07793EC7FE") @default(autoincrement())
+  UserId         Int
+  IsMarkToDelete Boolean?    @default(false, map: "DF__Cart__IsMarkToDe__7D439ABD")
+  CreatedDate    DateTime?   @default(now(), map: "DF__Cart__CreatedDat__7E37BEF6") @db.DateTime
+  UpdatedDate    DateTime?   @db.DateTime
+  CreatedBy      String?     @db.VarChar(150)
+  UpdatedBy      String?     @db.VarChar(150)
+  Users          Users       @relation(fields: [UserId], references: [Id], onUpdate: NoAction, map: "FK_Cart_Users")
+  CartItems      CartItems[]
+}
+
+model CartItems {
+  Id               Int             @id(map: "PK__CartItem__3214EC074EBB75D6") @default(autoincrement())
+  CartId           Int
+  ProductVariantId Int
+  Quantity         Int             @default(1, map: "DF__CartItems__Quant__02084FDA")
+  UnitPrice        Decimal         @db.Decimal(10, 2)
+  IsMarkToDelete   Boolean?        @default(false, map: "DF__CartItems__IsMar__02FC7413")
+  CreatedDate      DateTime?       @default(now(), map: "DF__CartItems__Creat__03F0984C") @db.DateTime
+  UpdatedDate      DateTime?       @db.DateTime
+  CreatedBy        String?         @db.VarChar(150)
+  UpdatedBy        String?         @db.VarChar(150)
+  Cart             Cart            @relation(fields: [CartId], references: [Id], onUpdate: NoAction, map: "FK_CartItems_Cart")
+  ProductVariants  ProductVariants @relation(fields: [ProductVariantId], references: [Id], onUpdate: NoAction, map: "FK_CartItems_Variant")
+}
+
+model Category {
+  Id             Int           @id(map: "PK__Category__3214EC073A54BE6E") @default(autoincrement())
+  Name           String        @db.VarChar(150)
+  Description    String?       @db.VarChar(500)
+  ImageUrl       String?       @db.VarChar(500)
+  IsMarkToDelete Boolean?      @default(false, map: "DF__Category__IsMark__59063A47")
+  CreatedDate    DateTime?     @default(now(), map: "DF__Category__Create__59FA5E80") @db.DateTime
+  UpdatedDate    DateTime?     @db.DateTime
+  CreatedBy      String?       @db.VarChar(150)
+  UpdatedBy      String?       @db.VarChar(150)
+  Products       Products[]
+  SubCategory    SubCategory[]
+}
+
+model Colors {
+  Id              Int               @id(map: "PK__Colors__3214EC07844CCAF9") @default(autoincrement())
+  Name            String            @db.VarChar(50)
+  IsMarkToDelete  Boolean?          @default(false, map: "DF__Colors__IsMarkTo__656C112C")
+  CreatedDate     DateTime?         @default(now(), map: "DF__Colors__CreatedD__66603565") @db.DateTime
+  UpdatedDate     DateTime?         @db.DateTime
+  CreatedBy       String?           @db.VarChar(150)
+  UpdatedBy       String?           @db.VarChar(150)
+  ProductVariants ProductVariants[]
+}
+
+model OrderHistory {
+  Id             Int         @id(map: "PK__OrderHis__3214EC07E233EFF1") @default(autoincrement())
+  OrderId        Int
+  OrderStatusId  Int
+  Remarks        String?     @db.VarChar(500)
+  IsMarkToDelete Boolean     @default(false, map: "DF__OrderHist__IsMar__29221CFB")
+  CreatedDate    DateTime    @default(now(), map: "DF__OrderHist__Creat__2A164134") @db.DateTime
+  UpdatedDate    DateTime?   @db.DateTime
+  CreatedBy      String?     @db.VarChar(150)
+  UpdatedBy      String?     @db.VarChar(150)
+  Orders         Orders      @relation(fields: [OrderId], references: [Id], onUpdate: NoAction, map: "FK_OrderHistory_Orders")
+  OrderStatus    OrderStatus @relation(fields: [OrderStatusId], references: [Id], onUpdate: NoAction, map: "FK_OrderHistory_Status")
+}
+
+model OrderItems {
+  Id               Int             @id(map: "PK__OrderIte__3214EC074379563B") @default(autoincrement())
+  OrderId          Int
+  ProductVariantId Int
+  ProductName      String          @db.VarChar(200)
+  SizeName         String          @db.VarChar(20)
+  ColorName        String?         @db.VarChar(50)
+  Quantity         Int
+  UnitPrice        Decimal         @db.Decimal(10, 2)
+  LineTotal        Decimal         @db.Decimal(10, 2)
+  IsMarkToDelete   Boolean?        @default(false, map: "DF__OrderItem__IsMar__1CBC4616")
+  CreatedDate      DateTime?       @default(now(), map: "DF__OrderItem__Creat__1DB06A4F") @db.DateTime
+  UpdatedDate      DateTime?       @db.DateTime
+  CreatedBy        String?         @db.VarChar(150)
+  UpdatedBy        String?         @db.VarChar(150)
+  Orders           Orders          @relation(fields: [OrderId], references: [Id], onUpdate: NoAction, map: "FK_OrderItems_Orders")
+  ProductVariants  ProductVariants @relation(fields: [ProductVariantId], references: [Id], onUpdate: NoAction, map: "FK_OrderItems_Variant")
+}
+
+model Orders {
+  Id                Int            @id(map: "PK__Orders__3214EC07515A80BB") @default(autoincrement())
+  UserId            Int?
+  OrderNumber       String         @unique(map: "UQ__Orders__CAC5E743F579A474") @db.VarChar(50)
+  ShippingAddressId Int
+  OrderStatusId     Int
+  PaymentMethodId   Int
+  SubTotal          Decimal        @db.Decimal(10, 2)
+  DeliveryCharge    Decimal        @default(0, map: "DF__Orders__Delivery__114A936A") @db.Decimal(10, 2)
+  Discount          Decimal        @default(0, map: "DF__Orders__Discount__123EB7A3") @db.Decimal(10, 2)
+  TotalAmount       Decimal        @db.Decimal(10, 2)
+  IsInsideDhaka     Boolean?       @default(true, map: "DF__Orders__IsInside__1332DBDC")
+  IsPaid            Boolean        @default(false, map: "DF__Orders__IsPaid__14270015")
+  TrackingNumber    String?        @db.VarChar(100)
+  CourierName       String?        @db.VarChar(100)
+  IsMarkToDelete    Boolean?       @default(false, map: "DF__Orders__IsMarkTo__151B244E")
+  CreatedDate       DateTime?      @default(now(), map: "DF__Orders__CreatedD__160F4887") @db.DateTime
+  UpdatedDate       DateTime?      @db.DateTime
+  CreatedBy         String?        @db.VarChar(150)
+  UpdatedBy         String?        @db.VarChar(150)
+  OrderHistory      OrderHistory[]
+  OrderItems        OrderItems[]
+  Address           Address        @relation(fields: [ShippingAddressId], references: [Id], onUpdate: NoAction, map: "FK_Orders_Address")
+  PaymentMethods    PaymentMethods @relation(fields: [PaymentMethodId], references: [Id], onUpdate: NoAction, map: "FK_Orders_PaymentMethod")
+  OrderStatus       OrderStatus    @relation(fields: [OrderStatusId], references: [Id], onUpdate: NoAction, map: "FK_Orders_Status")
+  Users             Users?         @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Orders_Users")
+  Payments          Payments[]
+}
+
+model OrderStatus {
+  Id             Int            @id(map: "PK__OrderSta__3214EC077253FC38") @default(autoincrement())
+  Name           String         @db.VarChar(50)
+  IsMarkToDelete Boolean?       @default(false, map: "DF__OrderStat__IsMar__08B54D69")
+  CreatedDate    DateTime?      @default(now(), map: "DF__OrderStat__Creat__09A971A2") @db.DateTime
+  UpdatedDate    DateTime?      @db.DateTime
+  CreatedBy      String?        @db.VarChar(150)
+  UpdatedBy      String?        @db.VarChar(150)
+  OrderHistory   OrderHistory[]
+  Orders         Orders[]
+}
+
+model PaymentMethods {
+  Id             Int        @id(map: "PK__PaymentM__3214EC073512C9CD") @default(autoincrement())
+  Name           String     @db.VarChar(50)
+  IsMarkToDelete Boolean?   @default(false, map: "DF__PaymentMe__IsMar__0C85DE4D")
+  CreatedDate    DateTime?  @default(now(), map: "DF__PaymentMe__Creat__0D7A0286") @db.DateTime
+  UpdatedDate    DateTime?  @db.DateTime
+  CreatedBy      String?    @db.VarChar(150)
+  UpdatedBy      String?    @db.VarChar(150)
+  Orders         Orders[]
+  Payments       Payments[]
+}
+
+model Payments {
+  Id              Int            @id(map: "PK__Payments__3214EC07B41B154C") @default(autoincrement())
+  OrderId         Int
+  PaymentMethodId Int
+  Amount          Decimal        @db.Decimal(10, 2)
+  TransactionId   String?        @db.VarChar(100)
+  SenderNumber    String?        @db.VarChar(20)
+  IsSuccessful    Boolean        @default(false, map: "DF__Payments__IsSucc__22751F6C")
+  IsMarkToDelete  Boolean        @default(false, map: "DF__Payments__IsMark__236943A5")
+  CreatedDate     DateTime       @default(now(), map: "DF__Payments__Create__245D67DE") @db.DateTime
+  UpdatedDate     DateTime?      @db.DateTime
+  CreatedBy       String?        @db.VarChar(150)
+  UpdatedBy       String?        @db.VarChar(150)
+  PaymentMethods  PaymentMethods @relation(fields: [PaymentMethodId], references: [Id], onUpdate: NoAction, map: "FK_Payments_Method")
+  Orders          Orders         @relation(fields: [OrderId], references: [Id], onUpdate: NoAction, map: "FK_Payments_Orders")
+}
+
+model ProductImages {
+  Id             Int       @id(map: "PK__ProductI__3214EC07FCBC5283") @default(autoincrement())
+  ProductId      Int
+  ImageUrl       String    @db.VarChar(500)
+  IsPrimary      Boolean?  @default(false, map: "DF__ProductIm__IsPri__778AC167")
+  IsMarkToDelete Boolean?  @default(false, map: "DF__ProductIm__IsMar__787EE5A0")
+  CreatedDate    DateTime? @default(now(), map: "DF__ProductIm__Creat__797309D9") @db.DateTime
+  UpdatedDate    DateTime? @db.DateTime
+  CreatedBy      String?   @db.VarChar(150)
+  UpdatedBy      String?   @db.VarChar(150)
+  Products       Products  @relation(fields: [ProductId], references: [Id], onUpdate: NoAction, map: "FK_Images_Products")
+}
+
+model Products {
+  Id              Int               @id(map: "PK__Products__3214EC0702BA0281") @default(autoincrement())
+  Name            String            @db.VarChar(200)
+  Description     String?           @db.VarChar(Max)
+  CategoryId      Int
+  SubCategoryId   Int
+  Brand           String?           @db.VarChar(100)
+  Fabric          String?           @db.VarChar(100)
+  Price           Decimal           @db.Decimal(10, 2)
+  DiscountPrice   Decimal?          @db.Decimal(10, 2)
+  SKU             String            @db.VarChar(50)
+  IsMarkToDelete  Boolean?          @default(false, map: "DF__Products__IsMark__693CA210")
+  CreatedDate     DateTime?         @default(now(), map: "DF__Products__Create__6A30C649") @db.DateTime
+  UpdatedDate     DateTime?         @db.DateTime
+  CreatedBy       String?           @db.VarChar(150)
+  UpdatedBy       String?           @db.VarChar(150)
+  ProductImages   ProductImages[]
+  Category        Category          @relation(fields: [CategoryId], references: [Id], onUpdate: NoAction, map: "FK_Products_Category")
+  SubCategory     SubCategory       @relation(fields: [SubCategoryId], references: [Id], onUpdate: NoAction, map: "FK_Products_SubCategory")
+  ProductVariants ProductVariants[]
+}
+
+model ProductVariants {
+  Id             Int          @id(map: "PK__ProductV__3214EC07BFE19A50") @default(autoincrement())
+  ProductId      Int
+  SizeId         Int
+  ColorId        Int?
+  StockQuantity  Int          @default(0, map: "DF__ProductVa__Stock__6FE99F9F")
+  IsMarkToDelete Boolean?     @default(false, map: "DF__ProductVa__IsMar__70DDC3D8")
+  CreatedDate    DateTime?    @default(now(), map: "DF__ProductVa__Creat__71D1E811") @db.DateTime
+  UpdatedDate    DateTime?    @db.DateTime
+  CreatedBy      String?      @db.VarChar(150)
+  UpdatedBy      String?      @db.VarChar(150)
+  CartItems      CartItems[]
+  OrderItems     OrderItems[]
+  Colors         Colors?      @relation(fields: [ColorId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Variants_Colors")
+  Products       Products     @relation(fields: [ProductId], references: [Id], onUpdate: NoAction, map: "FK_Variants_Products")
+  Sizes          Sizes        @relation(fields: [SizeId], references: [Id], onUpdate: NoAction, map: "FK_Variants_Sizes")
+
+  @@unique([ProductId, SizeId, ColorId], map: "UQ_Variant")
+}
+
+model Roles {
+  Id             Int       @id(map: "PK__Roles__3214EC07BEE283BB") @default(autoincrement())
+  Name           String    @db.VarChar(50)
+  IsMarkToDelete Boolean?  @default(false, map: "DF__Roles__IsMarkToD__49C3F6B7")
+  CreatedDate    DateTime? @default(now(), map: "DF__Roles__CreatedDa__4AB81AF0") @db.DateTime
+  UpdatedDate    DateTime? @db.DateTime
+  CreatedBy      Int
+  UpdatedBy      Int?
+  Users          Users[]
+}
+
+model ShopSettings {
+  Id                    Int       @id(map: "PK__ShopSett__3214EC07B6268372") @default(autoincrement())
+  ShopName              String    @db.VarChar(150)
+  Tagline               String?   @db.VarChar(255)
+  Description           String?   @db.VarChar(Max)
+  LogoUrl               String?   @db.VarChar(500)
+  FaviconUrl            String?   @db.VarChar(500)
+  BannerUrl             String?   @db.VarChar(500)
+  Email                 String?   @db.VarChar(150)
+  Phone                 String?   @db.VarChar(20)
+  WhatsAppNumber        String?   @db.VarChar(20)
+  Address               String?   @db.VarChar(300)
+  FacebookUrl           String?   @db.VarChar(300)
+  InstagramUrl          String?   @db.VarChar(300)
+  YoutubeUrl            String?   @db.VarChar(300)
+  TikTokUrl             String?   @db.VarChar(300)
+  MetaTitle             String?   @db.VarChar(150)
+  MetaDescription       String?   @db.VarChar(500)
+  MetaKeywords          String?   @db.VarChar(300)
+  Currency              String    @default("BDT", map: "DF__ShopSetti__Curre__2EDAF651") @db.VarChar(10)
+  FreeDeliveryThreshold Decimal?  @db.Decimal(10, 2)
+  IsMaintenanceMode     Boolean   @default(false, map: "DF__ShopSetti__IsMai__2FCF1A8A")
+  IsMarkToDelete        Boolean   @default(false, map: "DF__ShopSetti__IsMar__30C33EC3")
+  CreatedDate           DateTime  @default(now(), map: "DF__ShopSetti__Creat__31B762FC") @db.DateTime
+  UpdatedDate           DateTime? @db.DateTime
+  CreatedBy             Int
+  UpdatedBy             Int?
+}
+
+model Sizes {
+  Id              Int               @id(map: "PK__Sizes__3214EC07A9752383") @default(autoincrement())
+  Name            String            @db.VarChar(20)
+  IsMarkToDelete  Boolean?          @default(false, map: "DF__Sizes__IsMarkToD__619B8048")
+  CreatedDate     DateTime?         @default(now(), map: "DF__Sizes__CreatedDa__628FA481") @db.DateTime
+  UpdatedDate     DateTime?         @db.DateTime
+  CreatedBy       String?           @db.VarChar(150)
+  UpdatedBy       String?           @db.VarChar(150)
+  ProductVariants ProductVariants[]
+}
+
+model SubCategory {
+  Id             Int        @id(map: "PK__SubCateg__3214EC07E754AC5A") @default(autoincrement())
+  CategoryId     Int
+  Name           String     @db.VarChar(150)
+  Description    String?    @db.VarChar(500)
+  ImageUrl       String?    @db.VarChar(500)
+  IsMarkToDelete Boolean?   @default(false, map: "DF__SubCatego__IsMar__5CD6CB2B")
+  CreatedDate    DateTime?  @default(now(), map: "DF__SubCatego__Creat__5DCAEF64") @db.DateTime
+  UpdatedDate    DateTime?  @db.DateTime
+  CreatedBy      String?    @db.VarChar(150)
+  UpdatedBy      String?    @db.VarChar(150)
+  Products       Products[]
+  Category       Category   @relation(fields: [CategoryId], references: [Id], onUpdate: NoAction, map: "FK_SubCategory_Category")
+}
+
+model Users {
+  Id             Int       @id(map: "PK__Users__3214EC0793BEFFF9") @default(autoincrement())
+  Name           String    @db.VarChar(150)
+  Email          String?   @unique(map: "UQ__Users__A9D10534DFF6DF94") @db.VarChar(150)
+  Phone          String    @db.VarChar(20)
+  Password       String    @db.VarChar(Max)
+  RoleId         Int
+  IsActive       Boolean?  @default(true, map: "DF__Users__IsActive__4E88ABD4")
+  IsMarkToDelete Boolean?  @default(false, map: "DF__Users__IsMarkToD__4F7CD00D")
+  CreatedDate    DateTime? @default(now(), map: "DF__Users__CreatedDa__5070F446") @db.DateTime
+  UpdatedDate    DateTime? @db.DateTime
+  CreatedBy      String?   @db.VarChar(150)
+  UpdatedBy      String?   @db.VarChar(150)
+  Address        Address[]
+  Cart           Cart[]
+  Orders         Orders[]
+  Roles          Roles     @relation(fields: [RoleId], references: [Id], onUpdate: NoAction, map: "FK_Users_Roles")
+}
