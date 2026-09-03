@@ -90,8 +90,12 @@ router.get("/product/get", async (req, res) => {
     const formattedProducts = products.map((prod) => {
       const finalPrice = prod.DiscountPrice ?? prod.Price;
       const totalStock = prod.ProductVariants.reduce((sum, v) => sum + (v.StockQuantity || 0), 0);
+      const uniqueImages = (prod.ProductImages || []).filter(
+        (img, idx, arr) => arr.findIndex((t) => t.ImageUrl === img.ImageUrl) === idx
+      );
       return {
         ...prod,
+        ProductImages: uniqueImages,
         finalPrice,
         totalStock,
       };
@@ -155,10 +159,16 @@ router.get("/product/search", async (req, res) => {
       },
     });
 
-    const formattedProducts = products.map((prod) => ({
-      ...prod,
-      finalPrice: prod.DiscountPrice ?? prod.Price,
-    }));
+    const formattedProducts = products.map((prod) => {
+      const uniqueImages = (prod.ProductImages || []).filter(
+        (img, idx, arr) => arr.findIndex((t) => t.ImageUrl === img.ImageUrl) === idx
+      );
+      return {
+        ...prod,
+        ProductImages: uniqueImages,
+        finalPrice: prod.DiscountPrice ?? prod.Price,
+      };
+    });
 
     res.json({
       data: formattedProducts,
@@ -198,11 +208,17 @@ router.get("/product/featured", async (req, res) => {
       },
     });
 
-    const formattedProducts = products.map((prod) => ({
-      ...prod,
-      finalPrice: prod.DiscountPrice ?? prod.Price,
-      totalStock: prod.ProductVariants.reduce((sum, v) => sum + (v.StockQuantity || 0), 0),
-    }));
+    const formattedProducts = products.map((prod) => {
+      const uniqueImages = (prod.ProductImages || []).filter(
+        (img, idx, arr) => arr.findIndex((t) => t.ImageUrl === img.ImageUrl) === idx
+      );
+      return {
+        ...prod,
+        ProductImages: uniqueImages,
+        finalPrice: prod.DiscountPrice ?? prod.Price,
+        totalStock: prod.ProductVariants.reduce((sum, v) => sum + (v.StockQuantity || 0), 0),
+      };
+    });
 
     res.json({
       data: formattedProducts,
@@ -252,10 +268,14 @@ router.get("/product/get/:id", async (req, res) => {
 
     const finalPrice = product.DiscountPrice ?? product.Price;
     const totalStock = product.ProductVariants.reduce((sum, v) => sum + (v.StockQuantity || 0), 0);
+    const uniqueImages = (product.ProductImages || []).filter(
+      (img, idx, arr) => arr.findIndex((t) => t.ImageUrl === img.ImageUrl) === idx
+    );
 
     res.json({
       data: {
         ...product,
+        ProductImages: uniqueImages,
         finalPrice,
         totalStock,
       },
@@ -324,8 +344,45 @@ router.post("/product/create", authenticate, requireAdmin, async (req: Authentic
       },
     });
 
+    // Handle multiple product images if provided in request body
+    const rawImages = req.body.Images || req.body.images || (req.body.ImageUrl || req.body.imageUrl ? [req.body.ImageUrl || req.body.imageUrl] : []);
+    if (Array.isArray(rawImages) && rawImages.length > 0) {
+      let hasExplicitPrimary = rawImages.some((img: any) => typeof img === "object" && Boolean(img?.IsPrimary));
+      for (let i = 0; i < rawImages.length; i++) {
+        const item = rawImages[i];
+        const url = typeof item === "string" ? item.trim() : String(item?.ImageUrl || "").trim();
+        const isPrimary = typeof item === "string" ? (i === 0) : (hasExplicitPrimary ? Boolean(item?.IsPrimary) : i === 0);
+        if (url) {
+          await prisma.productImages.create({
+            data: {
+              ProductId: product.Id,
+              ImageUrl: url,
+              IsPrimary: isPrimary,
+              IsMarkToDelete: false,
+              CreatedBy: req.userId ? req.userId.toString() : "ADMIN",
+            },
+          });
+        }
+      }
+    }
+
+    const createdProduct = await prisma.products.findFirst({
+      where: { Id: product.Id },
+      include: {
+        Category: { select: { Id: true, Name: true } },
+        SubCategory: { select: { Id: true, Name: true } },
+        ProductImages: {
+          where: { IsMarkToDelete: false },
+          orderBy: [{ IsPrimary: "desc" }, { Id: "asc" }],
+        },
+        ProductVariants: {
+          where: { IsMarkToDelete: false },
+        },
+      },
+    });
+
     res.status(201).json({
-      data: product,
+      data: createdProduct || product,
       message: "Product created successfully",
     });
   } catch (error) {
@@ -391,8 +448,50 @@ router.put("/product/update/:id", authenticate, requireAdmin, async (req: Authen
       },
     });
 
+    // Sync multiple product images if Images/images array is provided
+    const rawImages = req.body.Images !== undefined ? req.body.Images : req.body.images;
+    if (Array.isArray(rawImages)) {
+      await prisma.productImages.updateMany({
+        where: { ProductId: id, IsMarkToDelete: false },
+        data: { IsMarkToDelete: true },
+      });
+
+      let hasExplicitPrimary = rawImages.some((img: any) => typeof img === "object" && Boolean(img?.IsPrimary));
+      for (let i = 0; i < rawImages.length; i++) {
+        const item = rawImages[i];
+        const url = typeof item === "string" ? item.trim() : String(item?.ImageUrl || "").trim();
+        const isPrimary = typeof item === "string" ? (i === 0) : (hasExplicitPrimary ? Boolean(item?.IsPrimary) : i === 0);
+        if (url) {
+          await prisma.productImages.create({
+            data: {
+              ProductId: id,
+              ImageUrl: url,
+              IsPrimary: isPrimary,
+              IsMarkToDelete: false,
+              CreatedBy: req.userId ? req.userId.toString() : "ADMIN",
+            },
+          });
+        }
+      }
+    }
+
+    const fullUpdatedProduct = await prisma.products.findFirst({
+      where: { Id: id },
+      include: {
+        Category: { select: { Id: true, Name: true } },
+        SubCategory: { select: { Id: true, Name: true } },
+        ProductImages: {
+          where: { IsMarkToDelete: false },
+          orderBy: [{ IsPrimary: "desc" }, { Id: "asc" }],
+        },
+        ProductVariants: {
+          where: { IsMarkToDelete: false },
+        },
+      },
+    });
+
     res.json({
-      data: updated,
+      data: fullUpdatedProduct || updated,
       message: "Product updated successfully",
     });
   } catch (error) {

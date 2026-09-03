@@ -139,13 +139,47 @@ router.post("/order/create", optionalAuthenticate, async (req: AuthenticatedRequ
       const discountAmount = Discount !== undefined ? parseFloat(String(Discount)) : 0;
       const totalAmount = Math.max(0, subTotal + deliveryChargeAmount - discountAmount);
 
-      // Step 2: Ensure OrderStatus exists (default 1 = Pending)
+      // Step 2: Ensure OrderStatus exists (default Pending)
       let pendingStatus = await tx.orderStatus.findFirst({
         where: { IsMarkToDelete: false },
         orderBy: { Id: "asc" },
       });
 
-      const orderStatusId = pendingStatus ? pendingStatus.Id : 1;
+      if (!pendingStatus) {
+        pendingStatus = await tx.orderStatus.create({
+          data: {
+            Name: "Pending",
+            IsMarkToDelete: false,
+            CreatedBy: "SYSTEM",
+          },
+        });
+      }
+
+      const orderStatusId = pendingStatus.Id;
+
+      // Ensure valid PaymentMethod exists
+      let validPaymentMethod = await tx.paymentMethods.findFirst({
+        where: { Id: paymentMethodId, IsMarkToDelete: false },
+      });
+
+      if (!validPaymentMethod) {
+        validPaymentMethod = await tx.paymentMethods.findFirst({
+          where: { IsMarkToDelete: false },
+          orderBy: { Id: "asc" },
+        });
+      }
+
+      if (!validPaymentMethod) {
+        validPaymentMethod = await tx.paymentMethods.create({
+          data: {
+            Name: "Cash on Delivery",
+            IsMarkToDelete: false,
+            CreatedBy: "SYSTEM",
+          },
+        });
+      }
+
+      const finalPaymentMethodId = validPaymentMethod.Id;
 
       // Step 3: Create Orders row
       const orderNumber = generateOrderNumber();
@@ -155,7 +189,7 @@ router.post("/order/create", optionalAuthenticate, async (req: AuthenticatedRequ
           OrderNumber: orderNumber,
           ShippingAddressId: shippingAddressId,
           OrderStatusId: orderStatusId,
-          PaymentMethodId: paymentMethodId,
+          PaymentMethodId: finalPaymentMethodId,
           SubTotal: subTotal,
           DeliveryCharge: deliveryChargeAmount,
           Discount: discountAmount,

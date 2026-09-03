@@ -8,7 +8,7 @@ const router = express.Router();
 // 1. GET /address/get/:userId
 router.get("/address/get/:userId", authenticate, async (req: AuthenticatedRequest, res) => {
   try {
-    const userId = parseInt(String(req.params.userId));
+    const userId = Number(req.params.userId);
     if (isNaN(userId)) {
       res.status(400).json({ message: "Invalid user ID" });
       return;
@@ -61,7 +61,7 @@ router.post("/address/create", optionalAuthenticate, async (req: AuthenticatedRe
     }
 
     // Determine target userId (authenticated user or explicit body userId for guest/admin)
-    const targetUserId = req.userId || (UserId ? parseInt(String(UserId)) : null);
+    const targetUserId = req.userId || (UserId ? Number(UserId) : null);
 
     const address = await prisma.address.create({
       data: {
@@ -92,7 +92,7 @@ router.post("/address/create", optionalAuthenticate, async (req: AuthenticatedRe
 // 3. PUT /address/update/:id
 router.put("/address/update/:id", authenticate, async (req: AuthenticatedRequest, res) => {
   try {
-    const id = parseInt(String(req.params.id));
+    const id = Number(req.params.id);
     if (isNaN(id)) {
       res.status(400).json({ message: "Invalid address ID" });
       return;
@@ -153,7 +153,7 @@ router.put("/address/update/:id", authenticate, async (req: AuthenticatedRequest
 // 4. PATCH /address/set-default/:id
 router.patch("/address/set-default/:id", authenticate, async (req: AuthenticatedRequest, res) => {
   try {
-    const id = parseInt(String(req.params.id));
+    const id = Number(req.params.id);
     if (isNaN(id)) {
       res.status(400).json({ message: "Invalid address ID" });
       return;
@@ -195,7 +195,7 @@ router.patch("/address/set-default/:id", authenticate, async (req: Authenticated
 // 5. DELETE /address/delete/:id (Soft delete)
 router.delete("/address/delete/:id", authenticate, async (req: AuthenticatedRequest, res) => {
   try {
-    const id = parseInt(String(req.params.id));
+    const id = Number(req.params.id);
     if (isNaN(id)) {
       res.status(400).json({ message: "Invalid address ID" });
       return;

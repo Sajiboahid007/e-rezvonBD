@@ -2,6 +2,9 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
+import path from "path";
+import fs from "fs";
+
 const app = express();
 
 app.use(
@@ -11,6 +14,13 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Ensure uploads folder exists and serve static uploads
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+app.use("/uploads", express.static(uploadDir));
 
 // Health Check
 app.get("/health", (req, res) => {
@@ -28,6 +38,7 @@ const colorRouter = require("./routes/color");
 const productRouter = require("./routes/product");
 const productVariantRouter = require("./routes/productVariant");
 const productImageRouter = require("./routes/productImage");
+const uploadRouter = require("./routes/upload");
 const cartRouter = require("./routes/cart");
 const cartItemRouter = require("./routes/cartItem");
 const orderRouter = require("./routes/order");
@@ -48,6 +59,7 @@ app.use("/api", colorRouter);
 app.use("/api", productRouter);
 app.use("/api", productVariantRouter);
 app.use("/api", productImageRouter);
+app.use("/api", uploadRouter);
 app.use("/api", cartRouter);
 app.use("/api", cartItemRouter);
 app.use("/api", orderRouter);
@@ -68,8 +80,15 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ message: "Internal server error" });
 });
 
+import { seedMasterData } from "./seed_master_data";
+
 const port = process.env.PORT || 3000;
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server is running at http://localhost:${port}`);
+  try {
+    await seedMasterData();
+  } catch (seedErr) {
+    console.error("Master data seeding error:", seedErr);
+  }
 });
